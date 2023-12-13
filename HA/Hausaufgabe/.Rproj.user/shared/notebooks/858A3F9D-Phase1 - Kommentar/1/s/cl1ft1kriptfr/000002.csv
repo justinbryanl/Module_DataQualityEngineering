@@ -1,0 +1,6 @@
+"0","# A = Flügellänge"
+"0","hw_a <- vp_df_isolated %>%"
+"0","  group_by(A) %>%"
+"0","  summarise(mean  = mean(response))"
+"0",""
+"0","hw_a"

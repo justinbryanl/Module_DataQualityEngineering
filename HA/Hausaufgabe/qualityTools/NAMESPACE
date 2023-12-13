@@ -1,0 +1,7 @@
+exportClass(desirability, distr, distrCollection, facDesign, desOpt)
+
+exportPattern("^[^\\.]")
+
+import(graphics)
+
+                                                                                      

@@ -1,0 +1,604 @@
+---
+title: "Phase - 1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Vorbereitung
+
+```{r}
+library(DescTools)
+library(qualityTools)
+library(tidyverse)
+library(readxl)
+
+if (!require(nortest)) {
+  install.packages("nortest")
+  require(nortest)
+} 
+library(nortest)
+```
+
+READING DATA
+
+```{r tidy_data}
+
+#grouped
+ortsauswahl_grouped <- ortauswahl %>% group_by(Ort) %>% mutate(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))
+
+#summarized
+ortsauswahl_summarized <- ortauswahl %>% group_by(Ort) %>% summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2)) %>% mutate(Cp = Toleranz/(6*sd_flugdauer))
+
+Toleranz <- 1 #nach Aufgabenstellung
+
+#zum Vergleich der Standardisierung 
+ortsauswahl_all <- ortauswahl %>% summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2), Cp = Toleranz/(6*sd_flugdauer)) %>% mutate(Ort = "Gesamt")
+
+final <- ortsauswahl_summarized %>% full_join(ortsauswahl_all)
+final
+
+```
+
+NORMALITY CHECK
+
+```{r}
+
+#ortspezifische Betrachtung
+ortauswahl_EW <- ortsauswahl_grouped %>% filter(Ort == "EW")
+ortauswahl_ER <- ortsauswahl_grouped %>% filter(Ort == "ER")
+ortauswahl_MA <- ortsauswahl_grouped %>% filter(Ort == "MA")
+ortauswahl_H  <- ortsauswahl_grouped %>% filter(Ort == "H")
+
+
+#Einzelne Daten überprüfen (Ort)
+#EW 
+histogram_EW<-  ggplot(data = ortauswahl_EW, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_EW$Flugdauer)) +
+          theme_bw() +  labs(title = "EW")
+
+qqplot_EW <- ggplot(mapping = aes(sample = ortauswahl_EW$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5)) + 
+          labs(title = "EW")
+
+histogram_EW
+qqplot_EW
+
+#ER
+histogram_ER<-  ggplot(data = ortauswahl_ER, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_ER$Flugdauer)) +
+          theme_bw()+  labs(title = "ER")
+
+qqplot_ER <- ggplot(mapping = aes(sample = ortauswahl_ER$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+
+           labs(title = "ER")
+
+histogram_ER
+qqplot_ER
+
+#MA
+histogram_MA<-  ggplot(data = ortauswahl_MA, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_MA$Flugdauer)) +
+          theme_bw() +  labs(title = "MA")
+
+qqplot_MA <- ggplot(mapping = aes(sample = ortauswahl_MA$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5)) + 
+           labs(title = "MA")
+
+histogram_MA
+qqplot_MA
+
+
+#H
+histogram_H<-  ggplot(data = ortauswahl_H, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_H$Flugdauer)) +
+          theme_bw() +  labs(title = "H")
+
+qqplot_H <- ggplot(mapping = aes(sample = ortauswahl_H$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+
+           labs(title = "H")
+
+histogram_H
+qqplot_H
+
+#Gesamte Daten überprüfen
+
+#Betrachtung Data
+
+histogram_gesamt <-  ggplot(data = ortauswahl, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl$Flugdauer)) +
+          theme_bw() +  labs(title = "Gesamt")
+
+qqplot_gesamt <- ggplot(mapping = aes(sample = ortauswahl$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+
+          labs(title = "Gesamt")
+
+histogram_gesamt
+qqplot_gesamt
+
+pcr(ortauswahl$Flugdauer)
+ad.test(ortauswahl$Flugdauer)
+```
+
+STANDARDISIERUNG
+
+```{r}
+pcr(standardisierung$Flugdauer)
+
+histogram_standardisierung <-  ggplot(data = standardisierung, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(standardisierung$Flugdauer)) +
+          theme_bw() +  labs(title = "Standardisierung")
+
+qqplot_standardisierung <- ggplot(mapping = aes(sample = standardisierung$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+ 
+          labs(title = "Standardisierung")
+
+histogram_standardisierung
+qqplot_standardisierung
+
+standardisierung_mutated <- standardisierung %>% 
+  mutate(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))
+
+standardisierung_summarized <- standardisierung %>% 
+  summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))
+
+standardisierung_mit_Cp <- standardisierung_summarized %>% mutate(Cp = Toleranz/(6*sd_flugdauer))
+
+standardisierung_mit_Cp
+
+```
+VOLLFAKTORIELLER VERSUCHSPLAN
+
+```{r message = FALSE}
+
+#Datenerstellung
+
+if (!require(qualityTools)) {
+  install.packages("qualityTools")
+  require(qualityTools)
+  }
+
+vp <- facDesign(
+  k = 4,
+  replicates = 2,
+  centerCube = 16
+  )
+
+names(vp) <- c("Fluegellaenge", "Koerperlaenge", "Einschnitt", "Papierart")
+lows(vp) <- c(60, 50, 0, 80)
+highs(vp) <- c(90, 100, 60, 120)
+units(vp) <- c("mm", "mm", "mm", "g/mm^2")
+
+vp_in_df <- as.data.frame(vp)
+vp_in_tibble <- as_tibble(vp_in_df)
+vp_sortiert_flugdauer <- vp_in_tibble %>% 
+  arrange(D) %>% 
+  arrange(C) %>% 
+  arrange(B) %>% 
+  arrange(A)
+
+vp_input_flugdauer <- versuchplan %>% 
+  arrange(Papierstaerke) %>% 
+  arrange(Einschnitt) %>% 
+  arrange(Koerperlaenge) %>% 
+  arrange(Fluegellaenge)
+
+vp_sortiert_flugdauer <- vp_sortiert_flugdauer %>% 
+  mutate(Flugdauer = vp_input_flugdauer$Flugdauer) %>% 
+  arrange(RunOrder) 
+
+Flugdauer <- vp_sortiert_flugdauer$Flugdauer
+response(vp)<- Flugdauer
+vp
+```
+
+UMWANDLUNG IN DATAFRAME (Übung  11)
+
+```{r}
+#Umwandlungsmethode von FacDesignObjekt zu dataframe und danach Gruppierung
+fdo_to_df <- function(fdo) {
+  if (nrow(fdo@centerCube) == 0) {
+    fdo_df <- data.frame(fdo@cube, response = fdo@response[[1]][1:(nrow(fdo@cube))]) 
+  } else { 
+    fdo_cube <- data.frame(fdo@cube, response = fdo@response[[1]][1:(nrow(fdo@cube))], group = 1) 
+    fdo_center <- data.frame(fdo@centerCube, response = fdo@response[[1]][(nrow(fdo@cube) + 1):nrow(fdo@response)], group = 0) 
+    fdo_df <- bind_rows(fdo_cube, fdo_center) 
+  }
+  return(fdo_df)
+}
+
+#Daten für lineares Modell
+vp_df <- fdo_to_df(vp)
+vp_df_isolated <- vp_df %>% filter(group == 1)
+vp_df_isolated
+vp_df_kruemmungtest <- vp_df %>% filter(group == 0)
+
+#Daten für die zeitliche Abhängigkeit Residuen
+vp_df_mitrunorder_df <- as.data.frame(vp)
+vp_df_mitrunorder_tibble <- as_tibble(vp_df_mitrunorder_df)
+
+versuchsplan_clean <- versuchplan %>%  filter( Fluegellaenge == 75, Koerperlaenge == 75, Einschnitt == 30, Papierstaerke == 100) %>% arrange(Wurf)
+
+vp_df_kruemmungtest_mitwurf <- vp_df_mitrunorder_tibble %>% filter(A == 0, B == 0, C == 0, D == 0) %>% arrange(RunOrder) %>% mutate( Wurf = versuchsplan_clean$Wurf)
+vp_df_kruemmungtest_mitwurf
+```
+
+BERECHNUNG UND VISUALISIERUNG VON HAUPTWIRKUNGEN (hw) 
+
+```{r message = FALSE}
+# A = Flügellänge
+hw_a <- vp_df_isolated %>%
+  group_by(A) %>%
+  summarise(mean  = mean(response))
+
+hw_a
+
+ggplot(data = hw_a, mapping = aes(x = A, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", title = "Effekt-Plot")
+
+# B = Körperlänge
+hw_b <- vp_df_isolated %>%
+  group_by(B) %>%
+  summarise(mean  = mean(response))
+
+hw_b
+
+ggplot(data = hw_b, mapping = aes(x = B, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "B = Körperlänge", y = "Flugdauer", title = "Effekt-Plot")
+
+# C = Einschnitt 
+hw_c <- vp_df_isolated %>%
+  group_by(C) %>%
+  summarise(mean  = mean(response))
+
+hw_c
+
+ggplot(data = hw_c, mapping = aes(x = C, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "C = Einschnitt", y = "Flugdauer", title = "Effekt-Plot")
+
+# D = Papierstärke 
+hw_d <- vp_df_isolated %>%
+  group_by(D) %>%
+  summarise(mean  = mean(response))
+
+hw_d
+
+ggplot(data = hw_d, mapping = aes(x = D, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "D = Papierstärke", y = "Flugdauer", title = "Effekt-Plot")
+
+```
+
+BERECHNUNG UND VISUALISIERUNG VON 2 FACH WECHSELWIRKUNGEN (ww)
+
+```{r}
+
+# A und B 
+ll <- (filter(vp_df, A == -1, B == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, A == -1, B ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, A ==  1, B == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, A ==  1, B ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", col = "B: Körperlänge", title = "Interaktions-Plot")
+
+#B und C
+ll <- (filter(vp_df, B == -1, C == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, B == -1, C ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, B ==  1, C == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, B ==  1, C ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "B: Körperlänge", y = "Flugdauer", col = "C : Einschnitt", title = "Interaktions-Plot")
+
+# C und D
+ll <- (filter(vp_df, C == -1, D == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, C == -1, D ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, C ==  1, D == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, C ==  1, D ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "C : Einschnitt", y = "Flugdauer", col = "D : Papierstaerke", title = "Interaktions-Plot")
+
+# A und C
+ll <- (filter(vp_df, A == -1, C == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, A == -1, C ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, A ==  1, C == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, A ==  1, C ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", col = "C : Einschnitt", title = "Interaktions-Plot")
+
+# A und D
+ll <- (filter(vp_df, A == -1, D == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, A == -1, D ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, A ==  1, D == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, A ==  1, D ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", col = "D : Papierstaerke", title = "Interaktions-Plot")
+
+# B und D
+ll <- (filter(vp_df, B == -1, D == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, B == -1, D ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, B ==  1, D == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, B ==  1, D ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "B: Körperlänge", y = "Flugdauer", col = "D : Papierstaerke", title = "Interaktions-Plot")
+```
+
+LINEAR REGRESSION MODEL (basically Berechnung Wirkung lagi cuma yang genau gt lol)
+
+```{r}
+
+lm_komplett <- lm(response ~ A * B * C * D, data = vp_df_isolated)
+summary(lm_komplett)
+
+lm_haupt <- lm(response ~ A + B + C + D, data = vp_df_isolated)
+summary(lm_haupt)
+
+#lm_haupt für die steepest Ascent.
+
+lm_signifikant <- lm(response ~ A * D + B * C, data = vp_df_isolated)
+summary(lm_signifikant)
+
+lm_AD <- lm(response ~ A + D, data = vp_df_isolated)
+summary(lm_AD)
+
+mod_summary <- summary(lm_AD)
+
+  pareto_plot <- function(lm, alpha = 0.05) {
+          erklaert <- "t-Wert"
+          effects <- summary(lm)$coefficients[,3][2:length(summary(lm)$coefficients[,3])]
+          effect_names <- names(effects)
+          data <- data.frame(name = effect_names, effects = abs(effects))
+          data$name <- factor(data$name, levels = data$name[order(data$effects, decreasing = TRUE)])
+          t_sig <- abs(qt(alpha/2, df = df.residual(lm)))
+          plot <- ggplot(data = data) + 
+            geom_col(mapping = aes(x = name, y = effects), fill = "lightblue") +
+            geom_hline(yintercept = t_sig, col = "red") +
+            scale_x_discrete(name = NULL) +
+            scale_y_continuous(name = erklaert) +
+            theme_bw() +
+            theme(panel.border = element_blank(),
+                  plot.title = element_text(hjust = 0.5, size = 20),
+                  plot.subtitle = element_text(hjust = 0.5, size = 18),
+                  axis.title = element_text(size = 18),
+                  axis.text = element_text(size = 16),
+                  legend.title = element_text(size = 18),
+                  legend.text = element_text(size = 16)) +
+            labs(title = "Standardisierte Haupteffekte und Wechselwirkungen",
+                 subtitle = substitute(paste(t[Krit] == t_sig, " für ", alpha == a), list(t_sig = round(t_sig, 3), a = alpha)))
+          return(plot)}
+   pareto_plot(lm_komplett, alpha = 0.05)
+```
+
+T-TEST KRÜMMUNG (2 seitige Hypothese mit alpha = 0.05)
+
+```{r}
+
+vp_df_kruemmungstest_summarized <- vp_df_kruemmungtest %>% summarize(mean = mean(response), var = var(response)*((n()-1)/n()), sd = (var)**(1/2), nC = n())
+
+mittelwert_beobachtung <- mod_summary$coefficient[1,1]
+
+t_test_kruemmung <- (mittelwert_beobachtung - vp_df_kruemmungstest_summarized$mean)/(vp_df_kruemmungstest_summarized$sd*((1/vp_df_kruemmungstest_summarized$nC + 1/32)**0.5))
+
+#32: die gesamte Anzahl für die lineare Regression
+
+alpha <- 0.05
+p_value <- 2*pt(q=t_test_kruemmung, df=15, lower.tail=TRUE)
+
+t_un <- qt(alpha/2, df = 15)
+t_ob <- qt(1 - alpha/2, df = 15)
+
+#hier wird gecheckt, ob die Hypothese mit den eigentlichen Daten übereinstimmt.
+t_test_kruemmung
+t_un
+t_ob
+
+#um zu überprüfen, ob sie sich der Interpolation annähern.
+vp_df_kruemmungstest_summarized$mean
+mittelwert_beobachtung
+```
+ 
+RESIDUAL ANALYSE (LINEAR MODEL ALLGEMEIN)
+ 
+```{r}
+
+#Residualanalyse , kein systematischer Muster zu sehen , fluktasi zufällig (INI BUAT LINEAR MODEL SAMA ISOLATED DATA) 
+plot(lm_signifikant, which = 1)
+
+residuals_v_tbl <- tibble(v = vp_df_isolated$response, y_est = lm_signifikant$fitted.values, 
+  res = lm_signifikant$residuals)
+qqnorm(residuals_v_tbl$res)
+qqline(residuals_v_tbl$res)
+
+sum(lm_signifikant$rediduals)
+mean(lm_signifikant$residuals)
+
+ad.test(residuals_v_tbl$res)
+
+```
+ 
+ZEITLICHE ABHÄNGIGKEIT RESIDUEN
+
+```{r}
+
+#Zeitliche Abhängigkeit für die Residuen in Refdesign ...
+vp_zeit <- vp_df_kruemmungtest_mitwurf %>% mutate(residue = Flugdauer - mittelwert_beobachtung)
+vp_zeit_all <- vp_df_mitrunorder_tibble %>% mutate(residue = Flugdauer - mittelwert_beobachtung)
+
+#Um die Informationen über Residuen zu checken.
+mean(vp_zeit$residue)
+sum(vp_zeit$residue)
+
+plot(vp_zeit_all$residue)
+lines(lowess(vp_zeit_all$residue), col = "red")
+abline( h = mean(vp_zeit_all$residue), col = "grey", lty = 3)
+
+#für die Refdesign ...
+plot2_res_mod_v <- ggplot(data = vp_zeit, aes(x = RunOrder, y = residue)) + 
+  geom_point() + 
+  geom_smooth(model= "loess") +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") + 
+  ggtitle("Untersuchung Zeitabhängigkeit der Residuen des RefDesigns", 
+    subtitle = "Residuen vs. RunOrder (sorted nach Wurf)") + 
+  xlab("RunOrder") + 
+  ylab("Res") + 
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16, h = 0.5), 
+    axis.text = element_text(size = 16), 
+    legend.title = element_text(size = 16, hjust = 0.5),
+    legend.text = element_text(size = 12),
+    plot.title = element_text(size = 16, hjust = 0.5), 
+    plot.subtitle = element_text(size = 12, hjust = 0.5))
+plot2_res_mod_v
+
+```
+
+----------------------------------------------------------------------------------------------------------
+Warum Randomisierung?
+
+Um Bias zu reduzieren, damit der Effekt deutlicher zu sehen ist und der Unterschied nur zufällig verursacht werden kann. Wenn es nicht randomisiert ist, bedeutet, dass es möglicherweise eine unterliegende Faktor gibt, die voreingenommen ist. Zum Beispiel bei einer Nachfrage nach einem schöneren Modell oder einer Auswahl eines Papiers nach der Qualität. Da gibt es eine Faktor, die hier nicht betrachtet werden, und es beeinflust das Ergebnis der Versuche. Wir können das aber nur erst am Ende erkennen, dass es fatal ist, sowohl wirtschaftlich als auch statistisch, weil es einerseits wiederholt werden müsste und andererseits unsere bisherigen Daten nicht mehr nutzbar wäre.
+
+Aus der Vorlesung wissen wir, dass die unerkannte systematische Einflüsse zufällig auf die Versuche verteilen.
+
+Wie verringert man die hohe Anzahl an Versuchen?
+
+Dies erfolgt durch die sogennanten Teilfaktor-Versuchen. Außerdem gibt es auch Taguchi-Design, die Qualität wird aber ein bisschen verzerrt.
+
+reduce bias, dh effektnya bisa dilihat jelas, dh unterschied kann nur zufällig verursacht werden.Nicht randomisierte, dh bisa jadi ada unterliegende Faktor yang biased jadi kek misalkan yang ini dia prefer pesawat yang bentuknya lebih bagus zb ato dia pake kertas yang menruut dia paling bagus, dan berarti ada faktor yang kita ga account kesini yang ngefek, jadi hasil versuchnya bisa salah besar dan kita baru tau di ende which is fatal wirtschaftlich karena versuch mesti dbikin lagi dan itu kosten. dan secara data yang kita pny jadi ga nutzbar ( fall yang lebih besser daripada taunya di akhir)
+
+terus : kalo baca ppt , dia buat unerkannte systematische Einfluesse zufällig auf die Versuche verteilen
+
+hohe Anzahl an Versuchen verringert?
+teilfaktor versuche.special taguchi design , quality tapi sedikit drop
+----------------------------------------------------------------------------------------------------------
+
+STEEPEST ASCENT
+
+```{r}
+
+#Modell für Steepest Ascent
+sa <- steepAscent(c("A","B", "C", "D"), response = "Flugdauer", size = 0.7, data = vp)
+
+steepest_ascent
+
+#grapische Darstellung für die Unterschiede
+data_sa <- data.frame(A = sa@X$A.coded, B = sa@X$B.coded, C = sa@X$C.coded, D = sa@X$D.coded)
+
+flugdauer2 <- predict(lm_AD, data_sa)
+
+flugdauer3 <- steepest_ascent$Flugdauer # aus Excel
+
+delta <- 0:5
+ggplot(data = data.frame(x = rep(delta, times = 2), y = c(flugdauer3, flugdauer2), group = rep(c("Excel", "SA_methode"), each = 6)), mapping = aes(x = x, y = y, col = group)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  theme(panel.border = element_blank()) +
+  labs(x = "Delta", y = "Flugdauer", col = "", title = "Steepest Ascent")
+
+#Erhöhung nach steepest Ascent
+
+prozent_erhöhung_vergleich_versuch <- (flugdauer2[6]- vp_df_kruemmungstest_summarized$mean)/vp_df_kruemmungstest_summarized$mean
+prozent_erhöhung_vergleich_versuch
+
+prozent_erhöhung_vergleich_lm_AD <- (flugdauer2[6]- mittelwert_beobachtung)/mittelwert_beobachtung
+prozent_erhöhung_vergleich_lm_AD
+
+```

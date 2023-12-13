@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": false,
+        "libraryPath": "C:/Users/ignga/OneDrive/Documents/R/win-library/4.0",
+        "installDependencies": true
+    }
+}

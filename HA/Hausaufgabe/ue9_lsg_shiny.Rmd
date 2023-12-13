@@ -1,0 +1,118 @@
+---
+title: "ue7_shiny_lsg"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# packages
+```{r}
+if(!require(install.load)){
+  install.packages("install.load")
+  library(install.load)
+}
+
+install_load("tidyverse", "readr", "ggplot2", "shiny", "leaflet")
+```
+
+# Shiny App
+Eine Shiny App ist eine Web App, die aus HTML und Javascript Elementen aufgebaut ist. Shiny ermöglicht es, web apps direkt in R und RStudio aufzubauen. Jede Shiny App besteht aus einer UI (User Interface) und einem Server.
+
+In der UI wird definiert, worauf der User sehen kann. Das können Buttons, Text, Bilder, ... sein.
+
+Im Server werden die Funktionalitäten beschrieben, also was passiert, wenn man auf einen Button klickt, wenn ein Textfeld ausgefüllt wurde, ...
+
+
+# basic app
+Wir bauen eine "Hello World" Shiny App
+```{r}
+ui <- fluidPage(
+  titlePanel("Wer das liest, der kann lesen! :)"),
+  mainPanel("Ich bin die Hauptfigurrrrrrrrr"),
+  sidebarPanel("Ich bin eine Nebenfigur")
+)
+
+server <- function(input, output){
+  
+}
+
+shinyApp(ui, server)
+```
+
+# COVID19 App
+Nun bauen wir eine App, die die länderspezifischen Entwicklungen der Pandemie zeigen.
+
+Wir brauchen dazu zwei Reiter:
+- Darstellung des Verlaufs der neu hinzugekommenen Covid-Cases 
+- Einen Karte mit den Gewichtungen der Ausprägungen
+
+Zuerst bauen wir eine UI
+## UI
+```{r}
+ui <- fluidPage(
+  titlePanel("COVID19"),
+  tabsetPanel(type = "tabs",
+              
+              # Baut Reiter
+              tabPanel("Plot", fluidRow(
+                # Bestimmt das Layout vom Sidebarpanel im Mainpanel
+                sidebarLayout(sidebarPanel(
+                   # Gibt einen Plot aus
+                  selectInput("countries", "Countries: ", c(""), multiple = TRUE)
+                ), mainPanel(
+                  # Gibt ein Textfeld mit Selectmethoden aus
+                  plotOutput(outputId = "plot", width = "1000px", height = "800px")
+                ), position = "right"))),
+                
+              # Baut uns eine Karte
+              tabPanel("Map", leafletOutput("map", height = "800px"))
+  )
+    
+)
+
+```
+
+
+
+
+
+
+## Server
+```{r}
+server <- function(input, output, session){
+  data <- read_csv("owid-covid-data.csv") %>%
+    select(1:8) %>%
+    na.omit()
+  # Zeigt Input im Textfeld im Bezug auf Eingabe an
+  updateSelectInput(session, inputId = "countries", choices = unique(data$location))
+  
+  # Plots des erstes Tabs
+  output$plot <- renderPlot({ # Der output wird mit der OutputID in der UI festgelegt
+    data %>% filter(location %in% input$countries) %>%
+      ggplot(aes(x = date, y = total_cases, color = location)) +
+      geom_point()
+  })
+  
+  # Map des zweites Tabs
+  output$map <- renderLeaflet({
+    gps <- read_csv("countries.csv") %>% na.omit()
+    data %>% group_by(location) %>% summarise(total = sum(new_cases, na.rm = TRUE)) %>%        left_join(gps, by = c("location" = "name")) %>% na.omit() %>%
+      leaflet() %>%
+      # Bestimmt den Theme der Karte
+      addProviderTiles(providers$CartoDB.DarkMatter) %>%
+      # Fügt Kreise hinzu, die die Anzahl der Corona-Fälle in den Ländern zeigt 
+      addCircleMarkers(lat = ~latitude, lng = ~longitude, popup = ~location, radius = ~total/100000)
+  })
+}
+
+```
+
+## Alles zusammen:
+```{r}
+shinyApp(ui, server)
+
+```
+
+

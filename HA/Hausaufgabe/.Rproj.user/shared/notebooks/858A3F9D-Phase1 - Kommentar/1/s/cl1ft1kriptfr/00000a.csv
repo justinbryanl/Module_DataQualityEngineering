@@ -1,0 +1,7 @@
+"0",""
+"0","# C = Einschnitt "
+"0","hw_c <- vp_df_isolated %>%"
+"0","  group_by(C) %>%"
+"0","  summarise(mean  = mean(response))"
+"0",""
+"0","hw_c"

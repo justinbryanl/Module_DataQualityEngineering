@@ -1,0 +1,154 @@
+---
+title: "ue10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# packages einbinden
+
+```{r}
+if( !require(leaflet)){
+  install.packages("leaflet")
+}
+library(leaflet)
+
+
+if( !require(shiny)){
+  install.packages("shiny")
+}
+library(shiny)
+
+if( !require(plotly)){
+  install.packages("plotly")
+}
+library(plotly)
+
+
+```
+
+# Karte mit Pop-Ups
+Wir wollen an einer Karte von Berlin arbeiten Pop-Ups zu Locations einführen.
+```{r}
+
+
+places <- read.csv("places.csv")
+
+ui <- fluidPage(
+  mainPanel(
+    leafletOutput(outputId = "map", width = 1000, height = 1000)
+  ),
+  
+  sidebarPanel(
+    actionButton(inputId = "reset", "RESET")
+  )
+
+)
+
+server <- function(input, output) {
+  
+  places <- read.csv("places.csv")
+
+  myIcons <- iconList(
+    Flanieren = makeIcon("walking.png", iconWidth = 24, iconHeight = 32),
+    Schnabulieren = makeIcon("food.png", iconWidth = 24, iconHeight = 32),
+    Shoppen = makeIcon("shopping-cart.png", iconWidth = 24, iconHeight = 32),
+    Vergnuegen = makeIcon("acting.png", iconWidth = 24, iconHeight = 32)
+    )
+  
+  output$map <- renderLeaflet({
+    leaflet(data = places) %>%
+      setView(lng = 13.4, lat = 52.42, zoom = 11) %>%
+      addTiles() %>%
+      addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~Sight, icon = ~myIcons[Art])
+  })
+  
+  observe({
+    input$reset
+    leafletProxy("map") %>%
+      setView(lng = 13.4, lat = 52.42, zoom = 11)
+  })
+  
+  
+  
+}
+
+
+shinyApp(ui, server)
+```
+
+* Icon von Freepik, Flaticons, Pause08 
+https://www.flaticon.com/free-icon/
+
+
+
+```{r}
+# get prepared functions
+source("read_WAchat.R")
+
+ui <- fluidPage(
+    
+    #define overall layout
+  sidebarLayout(
+    sidebarPanel(
+      fileInput(inputId = "filein", label = "Bitte Chat auswaehlen: "),
+      textInput(inputId = "person1", "Name der 1. Person"),
+      textInput(inputId = "person2", "Name der 2. Person")
+    ),
+    mainPanel(
+      plotlyOutput(outputId = "plotly"),
+      plotOutput(outputId =  "pie")
+    )
+    
+  )
+  
+  
+)
+
+server <- function(input, output) {
+  
+  # get data
+  get_data <- reactive({
+    req(input$filein)
+    req(input$person1)
+    req(input$person2)
+    
+    infile <- input$filein
+    data <- readChat(infile$datapath, input$person1, input$person2)
+    
+    return(data)
+    
+  })
+  
+  # render the first plot
+  output$plotly <- renderPlotly({
+    
+    df <- get_data()
+    plot_ly(count(df, Date), y = ~n, x = ~Date, type = "bar") %>%
+      add_trace(sissycount(df), type = "bar", x = ~sissycount(df)$Date, 
+                y = ~sissycount(df)$n) %>%
+      add_trace(kaisercount(df), type = "bar", x = ~kaisercount(df)$Date, 
+                y = ~kaisercount(df)$n) %>%
+      add_trace(ursulacount(df), type = "bar", x = ~ursulacount(df)$Date, 
+                y = ~ursulacount(df)$n) 
+    
+  })
+  
+  # render pie chart
+  output$pie <- renderPlot({
+    
+    df <- get_data()
+    p1 <- nrow(df[df$Person == input$person1, ] )
+    p2 <- nrow(df[df$Person == input$person2, ])
+    
+    pie(c(p1, p2), labels = c(input$person1, input$person2), col = c("green", "red"))
+    
+  })
+  
+  
+}
+
+shinyApp(ui, server)
+```

@@ -1,0 +1,9 @@
+"0",""
+"0","#bikin model SA nya  yag functionnya ada ga bener gatau kenapa (harusnya udah geklärt)"
+"0","sa <- steepAscent(c(""A"",""B"", ""C"", ""D""), response = ""Flugdauer"", size = 0.7, data = vp)"
+"1","
+"
+"1","Steepest Ascent for vp 
+"
+"1","
+"

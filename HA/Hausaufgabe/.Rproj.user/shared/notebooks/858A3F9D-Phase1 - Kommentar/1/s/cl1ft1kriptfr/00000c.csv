@@ -1,0 +1,8 @@
+"0",""
+"0","ggplot(data = hw_c, mapping = aes(x = C, y = mean)) +"
+"0","  geom_point(col = ""red"") +"
+"0","  geom_line() +"
+"0","  theme_bw() +"
+"0","  theme(plot.title = element_text(hjust = 0.5),"
+"0","        panel.border = element_blank()) +"
+"0","  labs(x = ""C = Einschnitt"", y = ""Flugdauer"", title = ""Effekt-Plot"")"

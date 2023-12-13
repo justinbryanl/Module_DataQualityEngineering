@@ -1,0 +1,4 @@
+"0","#unter Annahme, dass alle normalverteilt sind, und nur Cp kein Cpk, da der Sollwert unbekannt ist, und wir wollen den zu diesem Zeitpunkt noch nicht annehmen. Cp hängt per se nur von der Toleranzbreite ab."
+"0",""
+"0","ortsauswahl_mit_Cp <- ortsauswahl_summarized %>% mutate(Cp = Toleranz/(6*sd_flugdauer))"
+"0","ortsauswahl_mit_Cp"

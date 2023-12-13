@@ -1,0 +1,668 @@
+---
+title: "Phase - 1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Vorbereitung
+
+```{r}
+library(DescTools)
+library(qualityTools)
+library(tidyverse)
+library(readxl)
+
+if (!require(nortest)) {
+  install.packages("nortest")
+  require(nortest)
+} 
+library(nortest)
+```
+
+READING DATA
+
+```{r tidy_data}
+
+#Zuerst werden die Ortsauswahl Daten nach den Orten gruppiert, damit es leichter ist und weniger Zeit verbraucht, zusammengefasst zu werden.. 
+
+#grouped
+ortsauswahl_grouped <- ortauswahl %>% group_by(Ort) %>% mutate(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))
+
+#mithilfe der Funktion "summarize" wird dann die statistischen Kennzahlen einzelner Orten zusammengefasst. Diese Daten werden dann für die graphische Darstellung benötigt.
+
+#summarized
+ortsauswahl_summarized <- ortauswahl %>% group_by(Ort) %>% summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2)) %>% mutate(Cp = Toleranz/(6*sd_flugdauer))
+
+Toleranz <- 1 #nach Aufgabenstellung
+
+#Buat Vergleich Standardisierung 
+ortsauswahl_all <- ortauswahl %>% summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2), Cp = Toleranz/(6*sd_flugdauer)) %>% mutate(Ort = "Gesamt")
+
+final <- ortsauswahl_summarized %>% full_join(ortsauswahl_all)
+final
+
+#unter Annahme, dass alle normalverteilt sind, und nur Cp kein Cpk, da der Sollwert unbekannt ist, und wir wollen den zu diesem Zeitpunkt noch nicht annehmen. Cp hängt per se nur von der Toleranzbreite ab.
+
+#die zwei größten Cps sind bei EW und H Gebäude. Cp von EW liegt knapp unter 1.33 es kann, also noch angenommen werden, dass mit mehr Versuchen einen höheren Cp Wert zubekommen ist. für die weiteren Versuche wird der Ort EW als Standard festgestellt. am Ort "EW" kann höhere Flugdauer erreicht werden, welche unser Zeil obwohl H eine kleinere Standardabweichung hat, es gibt nur einen kleinen Unterschied. (Wenn wir dafür entscheiden können , hätten wir H Gebäude gewählt.,gatau good to say just leave it)
+```
+
+NORMALITY CHECK
+
+```{r}
+
+#nun wird untersucht, ob die Daten überhaupt normalverteilt ist. der Normality Test ermöglicht uns, das zu bestimmen.Die einzelnen Orten werden voneinander getrennt, damit wir die einzelnen Daten sehen können.#Nun wird ggplot benutzt, um die Daten von Ortsauswahl graphisch darzustellen. Hier werden Histogramm und QQplot verwendet.
+
+#ortspezifische Betrachtung
+ortauswahl_EW <- ortsauswahl_grouped %>% filter(Ort == "EW")
+ortauswahl_ER <- ortsauswahl_grouped %>% filter(Ort == "ER")
+ortauswahl_MA <- ortsauswahl_grouped %>% filter(Ort == "MA")
+ortauswahl_H  <- ortsauswahl_grouped %>% filter(Ort == "H")
+
+
+#cek data einzeln
+#EW 
+histogram_EW<-  ggplot(data = ortauswahl_EW, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_EW$Flugdauer)) +
+          theme_bw() +  labs(title = "EW")
+
+qqplot_EW <- ggplot(mapping = aes(sample = ortauswahl_EW$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5)) + 
+          labs(title = "EW")
+
+histogram_EW
+qqplot_EW
+
+#ER
+histogram_ER<-  ggplot(data = ortauswahl_ER, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_ER$Flugdauer)) +
+          theme_bw()+  labs(title = "ER")
+
+qqplot_ER <- ggplot(mapping = aes(sample = ortauswahl_ER$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+
+           labs(title = "ER")
+
+histogram_ER
+qqplot_ER
+
+#MA
+histogram_MA<-  ggplot(data = ortauswahl_MA, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_MA$Flugdauer)) +
+          theme_bw() +  labs(title = "MA")
+
+qqplot_MA <- ggplot(mapping = aes(sample = ortauswahl_MA$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5)) + 
+           labs(title = "MA")
+
+histogram_MA
+qqplot_MA
+
+
+#H
+histogram_H<-  ggplot(data = ortauswahl_H, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl_H$Flugdauer)) +
+          theme_bw() +  labs(title = "H")
+
+qqplot_H <- ggplot(mapping = aes(sample = ortauswahl_H$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+
+           labs(title = "H")
+
+histogram_H
+qqplot_H
+
+#cek data als gesamt
+
+#Betrachtung Data
+
+histogram_gesamt <-  ggplot(data = ortauswahl, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(ortauswahl$Flugdauer)) +
+          theme_bw() +  labs(title = "Gesamt")
+
+qqplot_gesamt <- ggplot(mapping = aes(sample = ortauswahl$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+
+          labs(title = "Gesamt")
+
+histogram_gesamt
+qqplot_gesamt
+
+pcr(ortauswahl$Flugdauer)
+ad.test(ortauswahl$Flugdauer)
+#Die PCR ist aber nicht so wichtig. Es dient nur dazu, damit wir das Ergebnis vom AD-Test erhalten können, sama liat normal curve. und die Graphen nbisschen zu vergleichen
+
+##Da es nur 20 Daten gibt, dürfen wir zurückschließen, dass das zu untersuchende Merkmal normalverteilt ist.
+
+##pecah satu2 buat cek dia normalverteilt sebenernya overkill cuma egal, grafik dr pcr bukan buat bikin educated assumptions tentang zentriert ato engga
+
+##conf_level = 0.9973002 , alpha = 0.26998% , p > alpha , H0 kann nicht verwerfen werden. YANG KITA MAU PAKE BUKAN GRAFIK MELAINKAN AD TESTnya
+
+
+#Nach den Graphen sind alle "Versuchen" in etwa normalverteilt, nicht perfekt aber reicht schon aus zu sagen dass sie normalverteilt sind, da nur 5 Beobachtungen vorhanden sind. Es gilt somit eine weitere Betrachtung des Cp Wertes für die Auswahl des besten Ortes für die Standardisierung. Höhere Cp Wert bedeutet dass die Versuche auf Dauer nachgemacht werden können. Er ist nicht für die weitere Versuche zu berücksichtigen, da das Histogramm zeigt, dass sie rechtsstil ist. es liegt vielleicht daran, dass da systematische Fehler vorliegen könnten.
+
+```
+
+STANDARDISIERUNG
+
+```{r}
+pcr(standardisierung$Flugdauer)
+
+histogram_standardisierung <-  ggplot(data = standardisierung, mapping = aes(x = Flugdauer)) +
+          geom_histogram(bins = nclass.Sturges(standardisierung$Flugdauer)) +
+          theme_bw() +  labs(title = "Standardisierung")
+
+qqplot_standardisierung <- ggplot(mapping = aes(sample = standardisierung$Flugdauer)) +
+          geom_qq() +
+          geom_qq_line() +
+          xlab("Theoritical Quantiles") +
+          ylab("Sample Quantiles") +
+          ggtitle("Normal Q-Q Plot") +
+          theme(plot.title = element_text(hjust = 0.5))+ 
+          labs(title = "Standardisierung")
+
+histogram_standardisierung
+qqplot_standardisierung
+
+standardisierung_mutated <- standardisierung %>% 
+  mutate(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))
+
+standardisierung_summarized <- standardisierung %>% 
+  summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))
+
+standardisierung_mit_Cp <- standardisierung_summarized %>% mutate(Cp = Toleranz/(6*sd_flugdauer))
+
+standardisierung_mit_Cp
+
+#Hier könnte man direkt hinsehen, dass nach der Standardisierung das zu untersuchende Merkmal normalverteilt ist (QQplot von PCR oder ggnorm), mit Mean von 4,08 und sd von 0,169. Die Standardabweichung ist 0,4 (sollte 0,04 sein) Einheit größer als mit 5 Proben. Es ist aber nicht so schlimm, da die statistische Auswertung mit 5 Beobachtungen sowieso nicht so statistisch informativ ist. Der Cp Wert liegt unter 1,33, es gilt, dass der Prozess nicht fähig ist, es werden daher Verbesserungen benötigt. Der Cp Wert hat hier von 0,9 aus dem 1. Teil auf 1. Es ist aber immer noch nicht fähig. 
+
+##Hier könnte man direkt hinsehen, dass nach der Standardiesierung das zu untersuchende Merkmal normalverteilt ist (QQplot dr pcr ato qqnorm). mit mean 4.08, und sd = 0,169. Die Standardabweichung ist 0.4(ini keknya harusnza 0.04) Einheit größer als mit 5 Proben, nicht so schlimm da statistische Auswertung mit 5 Beobachtungen soweise nicht so statisitch informativ. Der Cp Wert liegt unter 1.33 es gilt also dass der Prozess nicht fähig ist, es werden Verbesserungen benötigt. Cuma Cp wert naik dari 0.9 teil 1 sekarang jadi 1, walaupun tetep g fähig.
+
+#JANGAN LIAT ANALYSIS DARI PCR ITU BUAT STICHPROBEN BUKAN GRUNDGESAMTHEIT
+```
+VOLLFAKTORIELLER VERSUCHSPLAN
+
+```{r message = FALSE}
+
+#bikin datanya
+
+#Als nächstes kommen wir zu dem Versuchsplan. Wir haben hier die Daten so sortiert, damit wir die Daten für die Flugdauer zusammenfügen können. Übersichtlichkeitshalber werden die anderen Daten außer Flugdauer zunächst in einen High-Low Wert zugeteilt.
+
+if (!require(qualityTools)) {
+  install.packages("qualityTools")
+  require(qualityTools)
+  }
+
+vp <- facDesign(
+  k = 4,
+  replicates = 2,
+  centerCube = 16
+  )
+
+names(vp) <- c("Fluegellaenge", "Koerperlaenge", "Einschnitt", "Papierart")
+lows(vp) <- c(60, 50, 0, 80)
+highs(vp) <- c(90, 100, 60, 120)
+units(vp) <- c("mm", "mm", "mm", "g/mm^2")
+
+vp_in_df <- as.data.frame(vp)
+vp_in_tibble <- as_tibble(vp_in_df)
+vp_sortiert_flugdauer <- vp_in_tibble %>% 
+  arrange(D) %>% 
+  arrange(C) %>% 
+  arrange(B) %>% 
+  arrange(A)
+
+vp_input_flugdauer <- versuchplan %>% 
+  arrange(Papierstaerke) %>% 
+  arrange(Einschnitt) %>% 
+  arrange(Koerperlaenge) %>% 
+  arrange(Fluegellaenge)
+
+vp_sortiert_flugdauer <- vp_sortiert_flugdauer %>% 
+  mutate(Flugdauer = vp_input_flugdauer$Flugdauer) %>% 
+  arrange(RunOrder) 
+
+Flugdauer <- vp_sortiert_flugdauer$Flugdauer
+response(vp)<- Flugdauer
+vp
+```
+
+UMWANDLUNG IN DATAFRAME (Übung  11)
+
+```{r}
+#methode umwandlung ke dataframe dengan function terus dimasukin ke group
+##ini methode di übung
+fdo_to_df <- function(fdo) {
+  if (nrow(fdo@centerCube) == 0) {
+    fdo_df <- data.frame(fdo@cube, response = fdo@response[[1]][1:(nrow(fdo@cube))]) 
+  } else { 
+    fdo_cube <- data.frame(fdo@cube, response = fdo@response[[1]][1:(nrow(fdo@cube))], group = 1) 
+    fdo_center <- data.frame(fdo@centerCube, response = fdo@response[[1]][(nrow(fdo@cube) + 1):nrow(fdo@response)], group = 0) 
+    fdo_df <- bind_rows(fdo_cube, fdo_center) 
+  }
+  return(fdo_df)
+}
+
+#ini dipake buat linear model (runoder ga vorhanden disini) 
+#Diese Daten werden für lineares Modell benötigt
+vp_df <- fdo_to_df(vp)
+vp_df_isolated <- vp_df %>% filter(group == 1)
+vp_df_isolated
+vp_df_kruemmungtest <- vp_df %>% filter(group == 0)
+
+#ini methode yang lebih gampang dipake enthält semuanya cuma gaada groupnya( ini dipake buat zeitliche Abhängigkeit Residuen)
+#Diese Methode ist einfacher zu benutzen, da sie alle Daten enthält. Sie hat aber keine Gruppen. Sie wird für die zeitliche Abhängigkeit Residuen
+vp_df_mitrunorder_df <- as.data.frame(vp)
+vp_df_mitrunorder_tibble <- as_tibble(vp_df_mitrunorder_df)
+
+versuchsplan_clean <- versuchplan %>%  filter( Fluegellaenge == 75, Koerperlaenge == 75, Einschnitt == 30, Papierstaerke == 100) %>% arrange(Wurf)
+
+vp_df_kruemmungtest_mitwurf <- vp_df_mitrunorder_tibble %>% filter(A == 0, B == 0, C == 0, D == 0) %>% arrange(RunOrder) %>% mutate( Wurf = versuchsplan_clean$Wurf)
+vp_df_kruemmungtest_mitwurf
+
+##vp_df_isolated enthält nur die Daten für die hautpwirkung und wechselwirkung analysis. vp_df_kruemmungtest, ya buat test kruemmung buat cek ob unsere Annäherung sozusagen gut genug oder müssen die quadratischen Faktoren eingerechnet werden ato einbezogen werden gatau pokok ya maksudnya gua count in
+
+#vp_df_isolated enthält nur die Daten für die Hauptwirkung und Wechselwirkung Analyse. vp_df_kruemmungstest wird für den Krümmungstest benutzt, um zu checken, ob unsere Annäherung sozusagen gut genug ist, sodass wir bestimmen können, ob wir die quadratischen Faktoren eingerechnet werden müssen.  
+```
+
+BERECHNUNG UND VISUALISIERUNG VON HAUPTWIRKUNGEN (hw) 
+
+```{r message = FALSE}
+# A = Flügellänge
+hw_a <- vp_df_isolated %>%
+  group_by(A) %>%
+  summarise(mean  = mean(response))
+
+hw_a
+
+ggplot(data = hw_a, mapping = aes(x = A, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", title = "Effekt-Plot")
+
+# B = Körperlänge
+hw_b <- vp_df_isolated %>%
+  group_by(B) %>%
+  summarise(mean  = mean(response))
+
+hw_b
+
+ggplot(data = hw_b, mapping = aes(x = B, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "B = Körperlänge", y = "Flugdauer", title = "Effekt-Plot")
+
+# C = Einschnitt 
+hw_c <- vp_df_isolated %>%
+  group_by(C) %>%
+  summarise(mean  = mean(response))
+
+hw_c
+
+ggplot(data = hw_c, mapping = aes(x = C, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "C = Einschnitt", y = "Flugdauer", title = "Effekt-Plot")
+
+# D = Papierstärke 
+hw_d <- vp_df_isolated %>%
+  group_by(D) %>%
+  summarise(mean  = mean(response))
+
+hw_d
+
+ggplot(data = hw_d, mapping = aes(x = D, y = mean)) +
+  geom_point(col = "red") +
+  geom_line() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "D = Papierstärke", y = "Flugdauer", title = "Effekt-Plot")
+
+
+#Graphisch gesehen, führt eine Erhöhung von A und C zu (positiv buat apa?) und eine Erhöhung von B und D zu (negativ). Wir können trotzdem noch nicht schlussfolgern, ob es wirklich der Fall ist. Mithilfe des linearen Modells wird es aber möglich. 
+
+#Grapisch gesehen, Erhöhung von A und C positiv, Erhöhung von B und D negativ. BELOM bisa schlussfolgern ob dia signifikant, nanti pake linear model baru keliatan
+#Berechnung und Visualisierung von Wechselwirkungen (nur 2fach , 3 sama 4 gatau gmn gua)
+#Betrachtung ini make sense soalnya wechselwirkungnya mayan cuma dikit yang ngefek jadinya kek emg cuma haupt yang efeknya paling kuat 
+```
+
+BERECHNUNG UND VISUALISIERUNG VON 2 FACH WECHSELWIRKUNGEN (ww)
+
+```{r}
+
+# A und B 
+ll <- (filter(vp_df, A == -1, B == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, A == -1, B ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, A ==  1, B == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, A ==  1, B ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", col = "B: Körperlänge", title = "Interaktions-Plot")
+
+#B und C
+ll <- (filter(vp_df, B == -1, C == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, B == -1, C ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, B ==  1, C == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, B ==  1, C ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "B: Körperlänge", y = "Flugdauer", col = "C : Einschnitt", title = "Interaktions-Plot")
+
+# C und D
+ll <- (filter(vp_df, C == -1, D == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, C == -1, D ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, C ==  1, D == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, C ==  1, D ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "C : Einschnitt", y = "Flugdauer", col = "D : Papierstaerke", title = "Interaktions-Plot")
+
+# A und C
+ll <- (filter(vp_df, A == -1, C == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, A == -1, C ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, A ==  1, C == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, A ==  1, C ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", col = "C : Einschnitt", title = "Interaktions-Plot")
+
+# A und D
+ll <- (filter(vp_df, A == -1, D == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, A == -1, D ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, A ==  1, D == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, A ==  1, D ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "A: Flügellänge", y = "Flugdauer", col = "D : Papierstaerke", title = "Interaktions-Plot")
+
+# B und D
+ll <- (filter(vp_df, B == -1, D == -1) %>% summarise(mean = mean(response)))$mean
+lh <- (filter(vp_df, B == -1, D ==  1) %>% summarise(mean = mean(response)))$mean
+hl <- (filter(vp_df, B ==  1, D == -1) %>% summarise(mean = mean(response)))$mean
+hh <- (filter(vp_df, B ==  1, D ==  1) %>% summarise(mean = mean(response)))$mean
+
+df <- data.frame(y = c(ll, lh, hl, hh), x = c(-1, -1, 1, 1), col = c(-1, 1, -1, 1))
+
+ggplot(data = df, mapping = aes(x = x, y = y)) +
+  geom_point(col = "red") +
+  geom_line(mapping = aes(x = x, y = y, col = factor(col))) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.border = element_blank()) +
+  labs(x = "B: Körperlänge", y = "Flugdauer", col = "D : Papierstaerke", title = "Interaktions-Plot")
+
+#Visualisierung geht nur für 2 Fach Wechselwirkungen, da nur 2 Effekten graphisch in Interaction Plot verglichen werden können, von der Plot her kann man sehen, dass alle 2 Fach Wechselwirkungen negativ korelliert sind. Das bedeutet, dass eine Erhöhung in 2 Variablen einen negativen Einfluss auf die Flugdauer, was in dem neuen Modell vermieden werden muss. 
+
+##Visualisierung geht nur für 2 fach wechselwrikungen, da nur 2 effekten grapfisch in Interaction Plot verglichen werden können , von der plot her kann man sehen dass alle 2 fach wechselwirkungen negativ korelliert sind.  Das bedeutet, peningkatan di 2 variabel secara bersamaan punya negative effect ke Flugdauer. Dan itu berarti harus di vermeiden dalam bikin model baru
+```
+
+LINEAR REGRESSION MODEL (basically Berechnung Wirkung lagi cuma yang genau gt lol)
+
+```{r}
+
+lm_komplett <- lm(response ~ A * B * C * D, data = vp_df_isolated)
+summary(lm_komplett)
+
+lm_haupt <- lm(response ~ A + B + C + D, data = vp_df_isolated)
+summary(lm_haupt)
+
+#diese lm_haupt wird für die steepest Ascent gebraucht.
+##ini dipake buat steepest Ascent
+
+lm_signifikant <- lm(response ~ A * D + B * C, data = vp_df_isolated)
+summary(lm_signifikant)
+
+#die lm_signifikant werden wir eventuell nutzen, weil sie die signifikanten Daten enthalten. Wir können ....
+
+##ini yang kita mau pake possibly, soalnya dia ada signifikante daten enthalten , bisa diargumentasi yang skrg gua belom tau giamana , scheinbar paling logical buat ambil beberapa wechselwirkung yang ada effekt? + residual error dia lebih kecil multiple R squared genau kompromis full sama haupt , efek yang wechselwirkung tinggi itu kalah sm haupt
+
+#mod_summary <- summary(lm_signifikant)
+
+lm_AD <- lm(response ~ A + D, data = vp_df_isolated)
+summary(lm_AD)
+
+mod_summary <- summary(lm_AD)
+
+  pareto_plot <- function(lm, alpha = 0.05) {
+          erklaert <- "t-Wert"
+          effects <- summary(lm)$coefficients[,3][2:length(summary(lm)$coefficients[,3])]
+          effect_names <- names(effects)
+          data <- data.frame(name = effect_names, effects = abs(effects))
+          data$name <- factor(data$name, levels = data$name[order(data$effects, decreasing = TRUE)])
+          t_sig <- abs(qt(alpha/2, df = df.residual(lm)))
+          plot <- ggplot(data = data) + 
+            geom_col(mapping = aes(x = name, y = effects), fill = "lightblue") +
+            geom_hline(yintercept = t_sig, col = "red") +
+            scale_x_discrete(name = NULL) +
+            scale_y_continuous(name = erklaert) +
+            theme_bw() +
+            theme(panel.border = element_blank(),
+                  plot.title = element_text(hjust = 0.5, size = 20),
+                  plot.subtitle = element_text(hjust = 0.5, size = 18),
+                  axis.title = element_text(size = 18),
+                  axis.text = element_text(size = 16),
+                  legend.title = element_text(size = 18),
+                  legend.text = element_text(size = 16)) +
+            labs(title = "Standardisierte Haupteffekte und Wechselwirkungen",
+                 subtitle = substitute(paste(t[Krit] == t_sig, " für ", alpha == a), list(t_sig = round(t_sig, 3), a = alpha)))
+          return(plot)}
+   pareto_plot(lm_komplett, alpha = 0.05)
+```
+
+T-TEST KRÜMMUNG (2 seitige Hypothese mit alpha = 0.05)
+
+```{r}
+
+vp_df_kruemmungstest_summarized <- vp_df_kruemmungtest %>% summarize(mean = mean(response), var = var(response)*((n()-1)/n()), sd = (var)**(1/2), nC = n())
+
+mittelwert_beobachtung <- mod_summary$coefficient[1,1]
+
+t_test_kruemmung <- (mittelwert_beobachtung - vp_df_kruemmungstest_summarized$mean)/(vp_df_kruemmungstest_summarized$sd*((1/vp_df_kruemmungstest_summarized$nC + 1/32)**0.5))
+
+#32 ist die gesamte Anzahl für die lineare Regression
+##32 itu jumlah data buat bikin linear regressionnya
+
+alpha <- 0.05
+p_value <- 2*pt(q=t_test_kruemmung, df=15, lower.tail=TRUE)
+
+t_un <- qt(alpha/2, df = 15)
+t_ob <- qt(1 - alpha/2, df = 15)
+
+#hier wird gecheckt, ob die Hypothese mit den eigentlichen Daten übereinstimmt.
+##cek dia sesuai hypothese ato engga
+t_test_kruemmung
+t_un
+t_ob
+
+#um zu überprüfen, ob sie sich der Interpolation annähern.
+##buat cek dia actually deket ga interpolationnya
+vp_df_kruemmungstest_summarized$mean
+mittelwert_beobachtung
+
+# Die Nullhypothese ist nicht zu verwerfen. soalnya t test krümmung masi diantra t un and tob, p lebih gede dari alpha
+```
+ 
+RESIDUAL ANALYSE (LINEAR MODEL ALLGEMEIN)
+ 
+```{r}
+
+#Residualanalyse , kein systematischer Muster zu sehen , fluktasi zufällig (INI BUAT LINEAR MODEL SAMA ISOLATED DATA) 
+plot(lm_signifikant, which = 1)
+
+#ini kek yang di übung
+residuals_v_tbl <- tibble(v = vp_df_isolated$response, y_est = lm_signifikant$fitted.values, 
+  res = lm_signifikant$residuals)
+qqnorm(residuals_v_tbl$res)
+qqline(residuals_v_tbl$res)
+
+sum(lm_signifikant$rediduals)
+mean(lm_signifikant$residuals)
+
+ad.test(residuals_v_tbl$res)
+
+#Die Residuen sieht zufällig aus, sie ist aber normalverteilt, und mit dem AD-Test nachzuweisen. aus P val > alpha können wir dann die statische Inferenz bestimmen.
+#Da die lowestfit line sich dem Horizontal 0 annähert, ist es dann ein gutes Prädiktionsmodell, weil es systematische Fehler zeigt. (gamuncul di kasus kita?)
+
+##Residuennya normalverteilt dan terlihat zufällig, terbukti sama AD test dia nromalverteitl p val > alpha kita bisa bikinstatistische Inferenz
+##lowestfit line deket dan horizontal 0 also ein gutes Prädiktionsmodel karena dia zegt systematische Fehler ga muncul di kasus kita
+##ini buat cek model kita ud cukup ga linear ato butuh quadratisch , di fall ini keliatan model kita ud oke dan dia mayan satisfying soalnya dia normalverteilt , terus multiple r nya diatas 90an persen gt
+```
+ 
+ZEITLICHE ABHÄNGIGKEIT RESIDUEN
+
+```{r}
+
+#Zeitliche Abhängigkeit für die Residuen in Refdesign ...
+##zeitliche Abhängigkeit  buat residuen di refdesign
+vp_zeit <- vp_df_kruemmungtest_mitwurf %>% mutate(residue = Flugdauer - mittelwert_beobachtung)
+vp_zeit_all <- vp_df_mitrunorder_tibble %>% mutate(residue = Flugdauer - mittelwert_beobachtung)
+
+#Um die Informationen über Residuen zu checken.
+##buat cek informasi tentang residuennnya, SEMUA DATA YANG DIMINTA AUFGABE BUKAN INI
+mean(vp_zeit$residue)
+sum(vp_zeit$residue)
+
+plot(vp_zeit_all$residue)
+lines(lowess(vp_zeit_all$residue), col = "red")
+abline( h = mean(vp_zeit_all$residue), col = "grey", lty = 3)
+
+#für die Refdesign ...
+##ini buat refdesign , yang diminta
+plot2_res_mod_v <- ggplot(data = vp_zeit, aes(x = RunOrder, y = residue)) + 
+  geom_point() + 
+  geom_smooth(model= "loess") +
+  geom_hline(yintercept = 0, col = "red", linetype = "dashed") + 
+  ggtitle("Untersuchung Zeitabhängigkeit der Residuen des RefDesigns", 
+    subtitle = "Residuen vs. RunOrder (sorted nach Wurf)") + 
+  xlab("RunOrder") + 
+  ylab("Res") + 
+  theme_bw() + 
+  theme(axis.title = element_text(size = 16, h = 0.5), 
+    axis.text = element_text(size = 16), 
+    legend.title = element_text(size = 16, hjust = 0.5),
+    legend.text = element_text(size = 12),
+    plot.title = element_text(size = 16, hjust = 0.5), 
+    plot.subtitle = element_text(size = 12, hjust = 0.5))
+plot2_res_mod_v
+
+
+#Hier benötigt man keinen AD-Test, weil es sich nur um einen Punkt handelt ... . Wir können trotzdem hier die zeitliche Abhängigkeit von der Residuen. Je länger, desto kleiner also Decrease in Error. Es liegt vielleicht an den systematischen Einflüssen. Es ist aber eher nicht fatal, weil es sich sowieso am Ende verkleinert. ...
+
+##disini ga butuh ad test, soalnya cuma buat tes 1 titik(argument harus lebih di begründen lagi). Cuma bisa dilihat disini ada zeitlice Abhängigkeit dr residuenya, semakin lama semakin kecil kalo diliat ( descrease in error), might caused by systematische Einflüsse. SIt aber eher nicht fatal , soalnya dia mengecil am ende. kenapa gua bisa bilang ini kemungkinan systematisch bukan model kita yang salah tu gara2 gua da bikin yang secara gesamt dia bagian atas tadi buat lm sama yang di schrank ini ( lm + centerpoint), dam semuanya sehar kecuali ini
+```
+
+----------------------------------------------------------------------------------------------------------
+Warum Randomisierung : reduce bias, dh effektnya bisa dilihat jelas, dh unterschied kann nur zufällig verursacht werden.Nicht randomisierte, dh bisa jadi ada unterliegende Faktor yang biased jadi kek misalkan yang ini dia prefer pesawat yang bentuknya lebih bagus zb ato dia pake kertas yang menruut dia paling bagus, dan berarti ada faktor yang kita ga account kesini yang ngefek, jadi hasil versuchnya bisa salah besar dan kita baru tau di ende which is fatal wirtschaftlich karena versuch mesti dbikin lagi dan itu kosten. dan secara data yang kita pny jadi ga nutzbar ( fall yang lebih besser daripada taunya di akhir)
+
+terus : kalo baca ppt , dia buat unerkannte systematische Einfluesse zufällig auf die Versuche verteilen
+
+hohe Anzahl an Versuchen verringert?
+teilfaktor versuche.special taguchi design , quality tapi sedikit drop
+----------------------------------------------------------------------------------------------------------
+
+STEEPEST ASCENT
+
+```{r}
+
+#bikin model SA nya  yag functionnya ada ga bener gatau kenapa (harusnya udah geklärt)
+sa <- steepAscent(c("A","B", "C", "D"), response = "Flugdauer", size = 0.7, data = vp)
+
+steepest_ascent
+
+#grapische Darstellung buat unterschiednya
+data_sa <- data.frame(A = sa@X$A.coded, B = sa@X$B.coded, C = sa@X$C.coded, D = sa@X$D.coded)
+
+flugdauer2 <- predict(lm_AD, data_sa)
+
+flugdauer3 <- steepest_ascent$Flugdauer # aus Excel
+
+delta <- 0:5
+ggplot(data = data.frame(x = rep(delta, times = 2), y = c(flugdauer3, flugdauer2), group = rep(c("Excel", "SA_methode"), each = 6)), mapping = aes(x = x, y = y, col = group)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  theme(panel.border = element_blank()) +
+  labs(x = "Delta", y = "Flugdauer", col = "", title = "Steepest Ascent")
+
+#erhöhung nach steepest Ascent
+
+prozent_erhöhung_vergleich_versuch <- (flugdauer2[6]- vp_df_kruemmungstest_summarized$mean)/vp_df_kruemmungstest_summarized$mean
+prozent_erhöhung_vergleich_versuch
+
+prozent_erhöhung_vergleich_lm_AD <- (flugdauer2[6]- mittelwert_beobachtung)/mittelwert_beobachtung
+prozent_erhöhung_vergleich_lm_AD
+
+
+#Zusammenfassung: Ein Wert für Step von 0,7 wird benutzt, da er am ähnlichsten mit den Daten aus dem Excel-Datei für Steepest Ascent. Es wird für die Analyse des Einflusses von seiner Erhöhung auf das Referenzmodell, nämlich die (Ketiak) 0,0,0,0. Von den Daten aus dem Modell und dem Versuch können wir sehen, dass die Erhöhung von 50an% in Steepest Ascent mit Step von 0,65  führt.
+
+##Zusammenfassung : jadi ini skrg gua pake step 0.7 soalnya dia paling mirip sama kek yang data excel yang dikasi buat steepest ascent. Nah terus dibawa kdibikin analisa buat cek penginkatan dia terhadap referenzmodell kita yaitu ketiak 0,0,0,0 nah abis itu dilihat datanya buat 2 data yaitu yang buat dari model dan dari versuch. keduanya bisa dilihat apa pengingkatan 50% kalo ngarah di steepest ascent step 0.65 5 kali naik. 
+```
