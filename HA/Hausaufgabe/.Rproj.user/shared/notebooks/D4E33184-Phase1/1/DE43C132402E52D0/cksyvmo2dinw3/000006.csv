@@ -1,5 +1,0 @@
-"0","#bikin model SA nya  yag functionnya ada ga bener gatau kenapa"
-"0","sa <- steepAscent(c(""A"", ""D""), response = ""response"", size = 0.5, data = vp)"
-"2","Fehler in model.frame.default(formula = form, data = fdo, drop.unused.levels = TRUE) : 
-  Objekt ist keine Matrix
-"

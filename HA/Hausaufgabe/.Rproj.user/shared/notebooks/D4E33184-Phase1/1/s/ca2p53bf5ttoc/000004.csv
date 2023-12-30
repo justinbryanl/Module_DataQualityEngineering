@@ -1,7 +1,0 @@
-"0","#gatau buat ini cuma buat tau stepnya doang or what"
-"0","mod <- summary(lm_haupt)"
-"0","SchrittwieteD <- (mod$coefficients[3]/mod$coefficients[2])*0.5"
-"0",""
-"0","#grapische Darstellung buat unterschiednya"
-"0","data_sa <- data.frame(A = sa@X$A.coded, B = sa@X$B.coded, C = sa@X$C.coded, D = sa@X$D.coded)"
-"0","data_sa"

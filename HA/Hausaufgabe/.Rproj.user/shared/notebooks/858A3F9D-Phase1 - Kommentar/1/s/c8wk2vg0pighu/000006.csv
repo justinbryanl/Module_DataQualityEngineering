@@ -1,1 +1,0 @@
-"0","abline( h = mean(vp_zeit_all$residue), col = ""grey"", lty = 3)"

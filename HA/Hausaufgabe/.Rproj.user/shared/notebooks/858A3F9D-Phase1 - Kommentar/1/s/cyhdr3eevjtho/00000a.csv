@@ -1,6 +1,0 @@
-"0",""
-"0","#Hier könnte man direkt hinsehen, dass nach der Standardisierung das zu untersuchende Merkmal normalverteilt ist (QQplot von PCR oder ggnorm), mit Mean von 4,08 und sd von 0,169. Die Standardabweichung ist 0,4 (sollte 0,04 sein) Einheit größer als mit 5 Proben. Es ist aber nicht so schlimm, da die statistische Auswertung mit 5 Beobachtungen sowieso nicht so statistisch informativ ist. Der Cp Wert liegt unter 1,33, es gilt, dass der Prozess nicht fähig ist, es werden daher Verbesserungen benötigt. Der Cp Wert hat hier von 0,9 aus dem 1. Teil auf 1. Es ist aber immer noch nicht fähig. "
-"0",""
-"0","##Hier könnte man direkt hinsehen, dass nach der Standardiesierung das zu untersuchende Merkmal normalverteilt ist (QQplot dr pcr ato qqnorm). mit mean 4.08, und sd = 0,169. Die Standardabweichung ist 0.4(ini keknya harusnza 0.04) Einheit größer als mit 5 Proben, nicht so schlimm da statistische Auswertung mit 5 Beobachtungen soweise nicht so statisitch informativ. Der Cp Wert liegt unter 1.33 es gilt also dass der Prozess nicht fähig ist, es werden Verbesserungen benötigt. Cuma Cp wert naik dari 0.9 teil 1 sekarang jadi 1, walaupun tetep g fähig."
-"0",""
-"0","#JANGAN LIAT ANALYSIS DARI PCR ITU BUAT STICHPROBEN BUKAN GRUNDGESAMTHEIT"

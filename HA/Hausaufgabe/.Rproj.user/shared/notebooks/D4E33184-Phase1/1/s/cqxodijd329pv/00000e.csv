@@ -1,7 +1,0 @@
-"0",""
-"0","# D = Papierstärke "
-"0","hw_d <- vp_df_isolated %>%"
-"0","  group_by(D) %>%"
-"0","  summarise(mean  = mean(response))"
-"0",""
-"0","hw_d"

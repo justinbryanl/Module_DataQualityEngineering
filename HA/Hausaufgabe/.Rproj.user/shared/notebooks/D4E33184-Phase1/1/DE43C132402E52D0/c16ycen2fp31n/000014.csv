@@ -1,4 +1,0 @@
-"0",""
-"0","#summarized"
-"0","ortsauswahl_summarized <- ortauswahl %>% group_by(Ort) %>% summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))"
-"0","ortsauswahl_summarized"

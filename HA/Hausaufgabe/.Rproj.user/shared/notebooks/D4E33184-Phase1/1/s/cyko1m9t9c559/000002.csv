@@ -1,5 +1,0 @@
-"0","#bikin model SA nya  yag functionnya ada ga bener gatau kenapa"
-"0","sa <- steepAscent(c(""A"", ""D""), response = ""response"", size = 0.5, data = vp)"
-"2","Fehler in as.data.frame.default(data) : 
-  cannot coerce class ‘structure(""facDesign"", package = ""qualityTools"")’ to a data.frame
-"

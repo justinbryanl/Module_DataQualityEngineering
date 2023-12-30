@@ -1,3 +1,0 @@
-"0","#grouped"
-"0","ortsauswahl_grouped <- ortauswahl %>% group_by(Ort) %>% mutate(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2))"
-"0","ortsauswahl_grouped"

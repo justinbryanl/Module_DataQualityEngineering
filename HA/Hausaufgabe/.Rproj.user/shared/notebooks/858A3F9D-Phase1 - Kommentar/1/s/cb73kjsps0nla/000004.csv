@@ -1,5 +1,0 @@
-"0",""
-"0","#ini kek yang di übung"
-"0","residuals_v_tbl <- tibble(v = vp_df_isolated$response, y_est = lm_signifikant$fitted.values, "
-"0","  res = lm_signifikant$residuals)"
-"0","qqnorm(residuals_v_tbl$res)"

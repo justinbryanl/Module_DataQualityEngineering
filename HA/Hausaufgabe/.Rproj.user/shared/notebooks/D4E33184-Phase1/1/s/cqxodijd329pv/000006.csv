@@ -1,7 +1,0 @@
-"0",""
-"0","# B = Körperlänge"
-"0","hw_b <- vp_df_isolated %>%"
-"0","  group_by(B) %>%"
-"0","  summarise(mean  = mean(response))"
-"0",""
-"0","hw_b"
