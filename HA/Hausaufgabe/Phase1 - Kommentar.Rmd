@@ -33,10 +33,10 @@ ortsauswahl_grouped <- ortauswahl %>% group_by(Ort) %>% mutate(mean_flugdauer = 
 
 #mithilfe der Funktion "summarize" wird dann die statistischen Kennzahlen einzelner Orten zusammengefasst. Diese Daten werden dann für die graphische Darstellung benötigt.
 
+Toleranz <- 1 #nach Aufgabenstellung
+
 #summarized
 ortsauswahl_summarized <- ortauswahl %>% group_by(Ort) %>% summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2)) %>% mutate(Cp = Toleranz/(6*sd_flugdauer))
-
-Toleranz <- 1 #nach Aufgabenstellung
 
 #Buat Vergleich Standardisierung 
 ortsauswahl_all <- ortauswahl %>% summarize(mean_flugdauer = mean(Flugdauer), var_flugdauer = var(Flugdauer)*((n()-1)/n()), sd_flugdauer = (var_flugdauer)**(1/2), Cp = Toleranz/(6*sd_flugdauer)) %>% mutate(Ort = "Gesamt")
